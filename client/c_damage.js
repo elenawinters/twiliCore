@@ -2,7 +2,6 @@ let TrackedEntities = {};
 
 function MergeVehicleHealths(veh) {
     let wheel_healths = 0;
-    // print(GetVehicleNumberOfWheels(veh))
     for (let i = 0; i < GetVehicleNumberOfWheels(veh); i++) {
         wheel_healths += GetVehicleWheelHealth(veh, i);
     };
@@ -57,7 +56,6 @@ function CalculateHealthLost(ent) {
     if (IsEntityAPed(ent)) {
         health = TrackedEntities[ent].h - GetEntityHealth(ent);
         TrackedEntities[ent].h = GetEntityHealth(ent);
-        // print(health)
         armor = TrackedEntities[ent].a - GetPedArmour(ent);
         TrackedEntities[ent].a = GetPedArmour(ent);
     } else if (IsEntityAVehicle(ent)) {
@@ -68,15 +66,9 @@ function CalculateHealthLost(ent) {
 }
 
 function CalculateDamagePosition(suspect, victim, victimDied) {
-    // let [, position] = GetPedLastWeaponImpactCoord(suspect);
-    // IsEntityAtCoord(victim, position, [10, 10, 10], 0, 1, 0)
     let [, position] = GetPedLastWeaponImpactCoord(suspect);
-    // console.log(position)
-    // console.log(typeof position)
-    // if (IsEntityAtCoord(victim, position, [1, 1, 1], 0, 1, 0) || position == [0, 0, 0]) {
     if (position[0] == 0 && position[1] == 0 && position[2] == 0) {
         position = GetEntityCoords(victim);
-        // position = [69, 69, 69]
         if (IsEntityAPed(victim)) {
             if (victimDied == undefined) { victimDied = IsPedFatallyInjured(victim); }
             if (victimDied && GetPedCauseOfDeath(victim) == 0) {
@@ -90,9 +82,6 @@ function CalculateDamagePosition(suspect, victim, victimDied) {
                 }
             }
         }
-        // } else {
-        //     position = GetEntityCoords(victim);
-        // }
     }
     return position
 }
@@ -124,7 +113,7 @@ function CreateSituationReport(suspect, victim, position, weaponHash, damageType
         weaponHash: weaponHash,
         healthLost: CalculateHealthLost(victim),
         damageTypePrimary: GetWeaponDamageType(weaponHash),
-        damageTypeSecondary: damageTypeSecondary != null ? damageTypeSecondary : 0,
+        damageTypeSecondary: damageTypeSecondary,
         damageBone: damageBone,
         isDead: isDead,
         isMelee: isMelee,
@@ -133,7 +122,7 @@ function CreateSituationReport(suspect, victim, position, weaponHash, damageType
         isInWater: IsEntityInWater(victim),
         isUnderwater: IsPedSwimmingUnderWater(victim),
         isCritical: damageBone[1] == 0x796E,
-        victimDied: victimDied != null ? victimDied : false
+        victimDied: victimDied
     }
 
     return [suspectData, victimData, situation]
@@ -141,47 +130,17 @@ function CreateSituationReport(suspect, victim, position, weaponHash, damageType
 
 
 on('CEventDamage', function (victims, suspect) {
-    // console.log(victims);
-    // console.log(suspect);
     for (let [, victim] of Object.entries(victims)) {
         if (!IsPedAPlayer(suspect) || !IsPedAPlayer(victim)) { return; }  // required for hybrid
-        // const dmg = CalculateHealthLost(victim);
         const position = CalculateDamagePosition(suspect, victim);
         const weaponHash = GetPedCauseOfDeath(victim);
         const isMelee = GetWeaponDamageType(weaponHash) == 2;
         const damageBone = GetPedLastDamageBone(victim);
-        // const fadeRate = CalculateFadeRate(isMelee, weaponHash);
 
-
-        let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, null, damageBone, null, isMelee)
-            
-        // let situation = {
-        //     position: position,
-        //     weaponHash: weaponHash,
-        //     damageTypePrimary: GetWeaponDamageType(weaponHash),
-        //     damageTypeSecondary: null,
-        //     damageBone: damageBone,
-        //     isOnFire: IsEntityOnFire(victim),
-        //     isInWater: IsEntityInWater(victim),
-        //     isUnderwater: IsPedSwimmingUnderWater(victim),
-        //     isCritical: damageBone[1] == 0x796E,
-        //     isMelee: isMelee
-        // }
+        let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, 0, damageBone, false, isMelee)
 
         emitNet("twiliCore:damage:_sync", suspectData, victimData, situationData);
     }
-    // if (!skip_damage_render) {
-    //     if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {
-    //         DrawDamageText(position, Math.round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
-    //     } else {
-    //         DrawDamageText(position, Math.round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
-    //     }
-        
-    //     if (dmg.a != 0) {
-    //         DrawDamageText(position, Math.round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
-    //     }
-    // }
-
 })
 
 // use GetWeaponTimeBetweenShots to get dynamic fade speed per weapon
@@ -212,33 +171,6 @@ on('gameEventTriggered', function (eventName, data) {
     const damageBone = GetPedLastDamageBone(victim);
 
     let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, damageType, damageBone, victimDied, isMelee)
-    // const fadeRate = CalculateFadeRate(isMelee, weaponHash);
-    // const suspectPlayer = NetworkGetPlayerIndexFromPed(suspect)
-    // let suspectData = {
-    //     entity: suspect,
-    //     networkIndex: GetPlayerServerId(suspectPlayer),
-    //     networkName: GetPlayerName(suspectPlayer)
-    // }
-
-    // const victimPlayer = NetworkGetPlayerIndexFromPed(victim)
-    // let victimData = {
-    //     entity: victim,
-    //     networkIndex: GetPlayerServerId(victimPlayer),
-    //     networkName: GetPlayerName(victimPlayer)
-    // }
-
-    // let situation = {
-    //     position: position,
-    //     weaponHash: weaponHash,
-    //     damageTypePrimary: GetWeaponDamageType(weaponHash),
-    //     damageTypeSecondary: damageType,
-    //     damageBone: damageBone,
-    //     isOnFire: IsEntityOnFire(victim),
-    //     isInWater: IsEntityInWater(victim),
-    //     isUnderwater: IsPedSwimmingUnderWater(victim),
-    //     isCritical: damageBone[1] == 0x796E,
-    //     isMelee: isMelee
-    // }
 
     emit('twiliCore:damage:event', suspectData, victimData, situationData);
 

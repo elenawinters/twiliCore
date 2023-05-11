@@ -5,18 +5,16 @@ const REDM = 'redm';
 
 function PLAYER_PED() { return GetPlayerPed(-1); }
 
-// function PLAYER_INDEX() { return PLAYER_PED(); }
-
 const PLAYER_INDEX = NetworkGetPlayerIndexFromPed(PLAYER_PED());
 
 const PLAYER_NETID = GetPlayerServerId(PLAYER_INDEX);
-// const 
 
-exports("BUILD", BUILD);
-exports("GAME", GAME);
-exports("FIVEM", FIVEM);
-exports("REDM", REDM);
+
+exports("BUILD", () => { return BUILD; });
+exports("GAME", () => { return GAME; });
+exports("FIVEM", () => { return FIVEM; });
+exports("REDM", () => { return REDM; });
 exports("PLAYER_PED", PLAYER_PED);
-exports("PLAYER_INDEX", PLAYER_INDEX);
-exports("PLAYER_NETID", PLAYER_NETID);
+exports("PLAYER_INDEX", () => { return PLAYER_INDEX; });
+exports("PLAYER_NETID", () => { return PLAYER_NETID; });
 
