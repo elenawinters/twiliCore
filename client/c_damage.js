@@ -86,14 +86,8 @@ function CalculateDamagePosition(suspect, victim, victimDied) {
     return position
 }
 
-setTick(async () => {
-    await Delay(1000);
-    TrackEntityHealth();
-})
 
-
-
-function CreateSituationReport(suspect, victim, position, weaponHash, damageTypeSecondary, damageBone, victimDied, isMelee) {
+function CreateSituationReport(suspect, victim, position, weaponHash, damageTypeSecondary, damageBone, victimDied, isMelee, healthLost) {
     const suspectPlayer = NetworkGetPlayerIndexFromPed(suspect)
     let suspectData = {
         entity: suspect,
@@ -111,8 +105,8 @@ function CreateSituationReport(suspect, victim, position, weaponHash, damageType
     let situation = {
         position: position,
         weaponHash: weaponHash,
-        healthLost: CalculateHealthLost(victim),
-        damageTypePrimary: GetWeaponDamageType(weaponHash),
+        healthLost: healthLost == null ? CalculateHealthLost(victim) : healthLost,
+        damageTypePrimary: GAME == FIVEM ? GetWeaponDamageType(weaponHash) : null,
         damageTypeSecondary: damageTypeSecondary,
         damageBone: damageBone,
         isDead: isDead,
@@ -128,50 +122,93 @@ function CreateSituationReport(suspect, victim, position, weaponHash, damageType
     return [suspectData, victimData, situation]
 }
 
+if (GAME == FIVEM) {
+    setTick(async () => {
+        await Delay(1000);
+        TrackEntityHealth();
+    })
 
-on('CEventDamage', function (victims, suspect) {
-    for (let [, victim] of Object.entries(victims)) {
-        if (!IsPedAPlayer(suspect) || !IsPedAPlayer(victim)) { return; }  // required for hybrid
-        const position = CalculateDamagePosition(suspect, victim);
-        const weaponHash = GetPedCauseOfDeath(victim);
-        const isMelee = GetWeaponDamageType(weaponHash) == 2;
+    on('CEventDamage', function (victims, suspect) {
+        for (let [, victim] of Object.entries(victims)) {
+            if (!IsPedAPlayer(suspect) || !IsPedAPlayer(victim)) { return; }  // required for hybrid
+            const position = CalculateDamagePosition(suspect, victim);
+            const weaponHash = GetPedCauseOfDeath(victim);
+            const isMelee = GetWeaponDamageType(weaponHash) == 2;
+            const damageBone = GetPedLastDamageBone(victim);
+
+            let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, 0, damageBone, false, isMelee)
+
+            emitNet("twiliCore:damage:_sync", suspectData, victimData, situationData);
+        }
+    })
+
+    // use GetWeaponTimeBetweenShots to get dynamic fade speed per weapon
+    // use log 0.7 (x) to get Fade Speed from TimeBetweenShots. If output is below 0.1, keep it at 0.1. Refine later
+    on('gameEventTriggered', function (eventName, data) {
+        if (eventName != 'CEventNetworkEntityDamage') { return; }
+
+        const victim = data[0];
+        const suspect = data[1];
+
+        if (IsPedAPlayer(suspect) && IsPedAPlayer(victim) && suspect != victim) { return; }  // required for hybrid
+
+        let offset = 0;
+
+        if (BUILD >= 2060) {
+            offset++;
+            if (BUILD >= 2189) {
+                offset++;
+            }
+        }
+
+        const victimDied = data[3 + offset];
+        const weaponHash = data[4 + offset];
+        const isMelee = data[9 + offset];
+        const damageType = data[10 + offset];
+
+        const position = CalculateDamagePosition(suspect, victim, victimDied);
         const damageBone = GetPedLastDamageBone(victim);
 
-        let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, 0, damageBone, false, isMelee)
+        let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, damageType, damageBone, victimDied, isMelee)
 
-        emitNet("twiliCore:damage:_sync", suspectData, victimData, situationData);
-    }
-})
+        emit('twiliCore:damage:event', suspectData, victimData, situationData);
 
-// use GetWeaponTimeBetweenShots to get dynamic fade speed per weapon
-// use log 0.7 (x) to get Fade Speed from TimeBetweenShots. If output is below 0.1, keep it at 0.1. Refine later
-on('gameEventTriggered', function (eventName, data) {
-    if (eventName != 'CEventNetworkEntityDamage') { return; }
+    })
+} else if (GAME == REDM) {
+    setTick(async () => {
+        const size = GetNumberOfEvents(0);
+        if (size == 0) { return; }
+        for (let i = 0; i < size; i++) {
+            const eventAtIndex = GetEventAtIndex(0, i);
+            if (eventAtIndex != 402722103) { continue; }
 
-    const victim = data[0];
-    const suspect = data[1];
+            const eventDataSize = 9;
+            let eventDataStruct = new ArrayBuffer(8 * eventDataSize)  // DATAVIEW IS BUILT INTO JAVASCRIPT BABYYYY
+            let eventView = new DataView(eventDataStruct)
+            for (let iter = 0; iter < eventDataSize; iter++) {
+                eventView.setInt32(8 * iter, 0)
+            }
 
-    if (IsPedAPlayer(suspect) && IsPedAPlayer(victim) && suspect != victim) { return; }  // required for hybrid
+            const [eventDataExists, eventData] = GetEventData(0, i, eventDataSize)
+            console.log(eventDataExists)
+            console.log(eventData)  // todo parse event data
+            // So, we have our data. Now how the fuck do we parse it??!?!
 
-    let offset = 0;
+            if (!eventDataExists) { continue; }
 
-    if (BUILD >= 2060) {
-        offset++;
-        if (BUILD >= 2189) {
-            offset++;
+            const victim = eventView.getInt32(0);
+            const suspect = eventView.getInt32(8);
+            const position = [eventView.getInt32(8*6), eventView.getInt32(8*7), eventView.getInt32(8*8)]
+            const value = eventView.getInt32(32);
+
+            const weaponHash = GetPedCauseOfDeath(victim);
+            // const isMelee = GetWeaponDamageType(weaponHash) == 2;  // this doesn't exist in RDR3
+            const damageBone = GetPedLastDamageBone(victim);
+
+            let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, 0, damageBone, false, null, value)
+
+            emit('twiliCore:damage:event', suspectData, victimData, situationData);
+
         }
-    }
-
-    const victimDied = data[3 + offset];
-    const weaponHash = data[4 + offset];
-    const isMelee = data[9 + offset];
-    const damageType = data[10 + offset];
-
-    const position = CalculateDamagePosition(suspect, victim, victimDied);
-    const damageBone = GetPedLastDamageBone(victim);
-
-    let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, damageType, damageBone, victimDied, isMelee)
-
-    emit('twiliCore:damage:event', suspectData, victimData, situationData);
-
-})
+    })
+}
