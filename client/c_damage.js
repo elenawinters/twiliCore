@@ -184,22 +184,44 @@ if (GAME == FIVEM) {
 
             const eventDataSize = 9;
             let eventDataStruct = new ArrayBuffer(8 * eventDataSize)  // DATAVIEW IS BUILT INTO JAVASCRIPT BABYYYY
-            let eventView = new DataView(eventDataStruct)
-            for (let iter = 0; iter < eventDataSize; iter++) {
-                eventView.setInt32(8 * iter, 0)
-            }
+            let eventBuffer = new Uint8Array(eventDataStruct)
+            // let eventView = new DataView(eventDataStruct)
+            // for (let iter = 0; iter < eventDataSize; iter++) {
+            //     eventView.setInt32(8 * iter, 0)
+            // }
 
             const [eventDataExists, eventData] = GetEventData(0, i, eventDataSize)
             console.log(eventDataExists)
             console.log(eventData)  // todo parse event data
+            console.log(typeof eventData)  // todo parse event data
+
+            const binaryData = (eventData >>> 0).toString(2)
+
+            // const byteArray = [];
+            // console.log((eventData >>> 0).toString(2))
+            for (let e = 0; e < binaryData.length; e++) {
+                eventBuffer[e] = binaryData.charCodeAt(e);
+            }
+              
+            console.log(eventData)
+            
+            // let eventDataBuffer = new Uint8Array(byteArray)
+            // console.log(typeof eventDataBuffer)
+            // const eventDataBuffer = new Blob(eventData).arrayBuffer()
+            let eventView = new DataView(eventBuffer.buffer)
             // So, we have our data. Now how the fuck do we parse it??!?!
 
             if (!eventDataExists) { continue; }
 
-            const victim = eventView.getInt32(0);
-            const suspect = eventView.getInt32(8);
+            const victim = eventView.getInt32(0, true);
+            // const victim = eventView.slice(0, 8).reduce((acc, byte) => acc * 256 ** (byte * 8), 0);
+            console.log(victim)
+            const suspect = eventView.getInt32(8, true);
+            console.log(suspect)
             const position = [eventView.getInt32(8*6), eventView.getInt32(8*7), eventView.getInt32(8*8)]
+            console.log(position)
             const value = eventView.getInt32(32);
+            console.log(value)
 
             const weaponHash = GetPedCauseOfDeath(victim);
             // const isMelee = GetWeaponDamageType(weaponHash) == 2;  // this doesn't exist in RDR3

@@ -1,8 +1,9 @@
 const Delay = (ms) => new Promise(res => setTimeout(res, ms));
 
+// This is a really interesting way to kinda do classes
 exports("math", () => {
     return {
-        round: function test(number, place) {
+        round: function (number, place) {
             if (number == 0) { return 0; }
             let pow = (place === undefined) ? 1 : place;
             return Number(Math.round((number + Number.EPSILON) + 'e' + pow) + 'e-' + pow)
