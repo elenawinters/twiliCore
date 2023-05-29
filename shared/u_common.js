@@ -1,6 +1,13 @@
 const Delay = (ms) => new Promise(res => setTimeout(res, ms));
 
-// This is a really interesting way to kinda do classes
+// This is a really interesting way to kinda do classes.
+// It's probably not efficient though. Consider this UNSAFE.
+exports("util", () => {
+    return { 
+        Delay: (ms) => { return Delay(ms) }
+    }
+});
+
 exports("math", () => {
     return {
         round: function (number, place) {
