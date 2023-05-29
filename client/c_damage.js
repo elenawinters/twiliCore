@@ -180,54 +180,78 @@ if (GAME == FIVEM) {
         if (size == 0) { return; }
         for (let i = 0; i < size; i++) {
             const eventAtIndex = GetEventAtIndex(0, i);
-            if (eventAtIndex != 402722103) { continue; }
+            if (eventAtIndex != 402722103) { continue; }  // EVENT_ENTITY_DAMAGED
 
             const eventDataSize = 9;
-            let eventDataStruct = new ArrayBuffer(8 * eventDataSize)  // DATAVIEW IS BUILT INTO JAVASCRIPT BABYYYY
-            let eventBuffer = new Uint8Array(eventDataStruct)
+            // let eventDataStruct = new ArrayBuffer(8 * eventDataSize)  // DATAVIEW IS BUILT INTO JAVASCRIPT BABYYYY
+            // let eventBuffer = new Uint8Array(eventDataStruct)
             // let eventView = new DataView(eventDataStruct)
             // for (let iter = 0; iter < eventDataSize; iter++) {
             //     eventView.setInt32(8 * iter, 0)
             // }
 
-            const [eventDataExists, eventData] = GetEventData(0, i, eventDataSize)
-            console.log(eventDataExists)
-            console.log(eventData)  // todo parse event data
-            console.log(typeof eventData)  // todo parse event data
+            // let eventDataExists = 0
+            // let eventData = 0
+            const eventBuffer = new Uint8Array(8 * eventDataSize);
 
-            const binaryData = (eventData >>> 0).toString(2)
-
-            // const byteArray = [];
-            // console.log((eventData >>> 0).toString(2))
-            for (let e = 0; e < binaryData.length; e++) {
-                eventBuffer[e] = binaryData.charCodeAt(e);
-            }
-              
-            console.log(eventData)
-            
-            // let eventDataBuffer = new Uint8Array(byteArray)
-            // console.log(typeof eventDataBuffer)
-            // const eventDataBuffer = new Blob(eventData).arrayBuffer()
+            // VESPURA IS WRONG, IT'S NOT AN ANY TYPE, IT'LL RETURN THE FIRST NUMBER
+            // let eventData = GetEventData(0, i, eventDataSize)  // so, we want to get the data, haha, we can only get the first index?
+            // Invoking the native will give us all of our data. https://github.com/fivem-wl/fivem-js/blob/221bd95cc6071db370cfc38189b9761c05184be0/src/weapon/DlcWeaponData.ts#L69
+            const eventDataExists = Citizen.invokeNative('0x57EC5FA4D4D6AFCA', 0, i, eventBuffer, eventDataSize)
+            console.log(eventBuffer)
             let eventView = new DataView(eventBuffer.buffer)
-            // So, we have our data. Now how the fuck do we parse it??!?!
+            // const eventDataExists = eventData[0]
+            // console.log(eventData[1])
+            // console.log(eventData[2])
+
+            // [eventDataExists, eventView.buffer] = GetEventData(0, i, eventDataSize)
+            // console.log(eventDataExists)
+            // console.log(eventData)  // todo parse event data
+            // console.log(typeof eventData)  // todo parse event data
+
+            // const binaryData = (eventData >>> 0).toString(2)
+
+            // // const byteArray = [];
+            // // console.log((eventData >>> 0).toString(2))
+            // for (let e = 0; e < binaryData.length; e++) {
+            //     eventBuffer[e] = binaryData.charCodeAt(e);
+            // }
+              
+            // console.log(eventData)
+            
+            // // let eventDataBuffer = new Uint8Array(byteArray)
+            // // console.log(typeof eventDataBuffer)
+            // // const eventDataBuffer = new Blob(eventData).arrayBuffer()
+            // let eventView = new DataView(eventBuffer.buffer)
+            // // So, we have our data. Now how the fuck do we parse it??!?!
 
             if (!eventDataExists) { continue; }
 
             const victim = eventView.getInt32(0, true);
-            // const victim = eventView.slice(0, 8).reduce((acc, byte) => acc * 256 ** (byte * 8), 0);
+            // // const victim = eventView.slice(0, 8).reduce((acc, byte) => acc * 256 ** (byte * 8), 0);
             console.log(victim)
             const suspect = eventView.getInt32(8, true);
             console.log(suspect)
-            const position = [eventView.getInt32(8*6), eventView.getInt32(8*7), eventView.getInt32(8*8)]
-            console.log(position)
-            const value = eventView.getInt32(32);
-            console.log(value)
+            const weaponHash = eventView.getInt32(16, true);
+            console.log(weaponHash)
+            const ammoHash = eventView.getInt32(24, true);
+            console.log(ammoHash)
+            const healthLost = eventView.getFloat32(32, true);
+            console.log(healthLost)
 
-            const weaponHash = GetPedCauseOfDeath(victim);
+            // const unknownValue = eventView.getInt32(40, true);  // always 1?
+            // console.log(unknownValue)
+
+            // const position = [0, 0, 0]
+            const position = [eventView.getFloat32(48, true), eventView.getFloat32(56, true), eventView.getFloat32(64, true)]
+            console.log(position)
+            // const value = 0
+
+            // const weaponHash = GetPedCauseOfDeath(victim);
             // const isMelee = GetWeaponDamageType(weaponHash) == 2;  // this doesn't exist in RDR3
             const damageBone = GetPedLastDamageBone(victim);
 
-            let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, 0, damageBone, false, null, value)
+            let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, 0, damageBone, false, null, healthLost)
 
             emit('twiliCore:damage:event', suspectData, victimData, situationData);
 
