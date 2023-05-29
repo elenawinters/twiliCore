@@ -142,8 +142,6 @@ if (GAME == FIVEM) {
         }
     })
 
-    // use GetWeaponTimeBetweenShots to get dynamic fade speed per weapon
-    // use log 0.7 (x) to get Fade Speed from TimeBetweenShots. If output is below 0.1, keep it at 0.1. Refine later
     on('gameEventTriggered', function (eventName, data) {
         if (eventName != 'CEventNetworkEntityDamage') { return; }
 
@@ -183,15 +181,6 @@ if (GAME == FIVEM) {
             if (eventAtIndex != 402722103) { continue; }  // EVENT_ENTITY_DAMAGED
 
             const eventDataSize = 9;
-            // let eventDataStruct = new ArrayBuffer(8 * eventDataSize)  // DATAVIEW IS BUILT INTO JAVASCRIPT BABYYYY
-            // let eventBuffer = new Uint8Array(eventDataStruct)
-            // let eventView = new DataView(eventDataStruct)
-            // for (let iter = 0; iter < eventDataSize; iter++) {
-            //     eventView.setInt32(8 * iter, 0)
-            // }
-
-            // let eventDataExists = 0
-            // let eventData = 0
             const eventBuffer = new Uint8Array(8 * eventDataSize);
 
             // VESPURA IS WRONG, IT'S NOT AN ANY TYPE, IT'LL RETURN THE FIRST NUMBER
@@ -200,58 +189,31 @@ if (GAME == FIVEM) {
             const eventDataExists = Citizen.invokeNative('0x57EC5FA4D4D6AFCA', 0, i, eventBuffer, eventDataSize)
             console.log(eventBuffer)
             let eventView = new DataView(eventBuffer.buffer)
-            // const eventDataExists = eventData[0]
-            // console.log(eventData[1])
-            // console.log(eventData[2])
-
-            // [eventDataExists, eventView.buffer] = GetEventData(0, i, eventDataSize)
-            // console.log(eventDataExists)
-            // console.log(eventData)  // todo parse event data
-            // console.log(typeof eventData)  // todo parse event data
-
-            // const binaryData = (eventData >>> 0).toString(2)
-
-            // // const byteArray = [];
-            // // console.log((eventData >>> 0).toString(2))
-            // for (let e = 0; e < binaryData.length; e++) {
-            //     eventBuffer[e] = binaryData.charCodeAt(e);
-            // }
-              
-            // console.log(eventData)
-            
-            // // let eventDataBuffer = new Uint8Array(byteArray)
-            // // console.log(typeof eventDataBuffer)
-            // // const eventDataBuffer = new Blob(eventData).arrayBuffer()
-            // let eventView = new DataView(eventBuffer.buffer)
-            // // So, we have our data. Now how the fuck do we parse it??!?!
 
             if (!eventDataExists) { continue; }
 
             const victim = eventView.getInt32(0, true);
-            // // const victim = eventView.slice(0, 8).reduce((acc, byte) => acc * 256 ** (byte * 8), 0);
-            console.log(victim)
             const suspect = eventView.getInt32(8, true);
-            console.log(suspect)
             const weaponHash = eventView.getInt32(16, true);
-            console.log(weaponHash)
             const ammoHash = eventView.getInt32(24, true);
-            console.log(ammoHash)
             const healthLost = eventView.getFloat32(32, true);
-            console.log(healthLost)
-
             // const unknownValue = eventView.getInt32(40, true);  // always 1?
-            // console.log(unknownValue)
-
-            // const position = [0, 0, 0]
             const position = [eventView.getFloat32(48, true), eventView.getFloat32(56, true), eventView.getFloat32(64, true)]
-            console.log(position)
-            // const value = 0
+
+            // console.log(victim)
+            // console.log(suspect)
+            // console.log(weaponHash)
+            // console.log(ammoHash)
+            // console.log(healthLost)
+            // // console.log(unknownValue)
+            // console.log(position)
 
             // const weaponHash = GetPedCauseOfDeath(victim);
-            // const isMelee = GetWeaponDamageType(weaponHash) == 2;  // this doesn't exist in RDR3
+            // const isMelee = GetWeaponDamageType(weaponHash) == 2;  // this native doesn't exist in RDR3
+            const isMelee = ammoHash == 0 ? true : false;  // this will work
             const damageBone = GetPedLastDamageBone(victim);
 
-            let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, 0, damageBone, false, null, healthLost)
+            let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, 0, damageBone, false, isMelee, healthLost)
 
             emit('twiliCore:damage:event', suspectData, victimData, situationData);
 
