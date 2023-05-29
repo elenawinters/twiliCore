@@ -1,3 +1,5 @@
+// TODO: Make use of TrackedEntities to know when an entity is really dead.
+// RedM culls out entities when they are dead, OneSync or not, and when they need to show up, they spawn them and kill them.
 let TrackedEntities = {};
 
 function MergeVehicleHealths(veh) {
