@@ -101,7 +101,6 @@ function CreateSituationReport(suspect, victim, position, weaponHash, damageType
         networkIndex: GetPlayerServerId(victimPlayer),
         networkName: GetPlayerName(victimPlayer)
     }
-    let isDead = IsPedFatallyInjured(victim);
     let situation = {
         position: position,
         weaponHash: weaponHash,
@@ -109,7 +108,8 @@ function CreateSituationReport(suspect, victim, position, weaponHash, damageType
         damageTypePrimary: GAME == FIVEM ? GetWeaponDamageType(weaponHash) : null,
         damageTypeSecondary: damageTypeSecondary,
         damageBone: damageBone,
-        isDead: isDead,
+        isDead: IsEntityDead(victim),
+        isDying: IsPedFatallyInjured(victim),
         isMelee: isMelee,
         isOnFire: IsEntityOnFire(victim),
         isInWrithe: IsPedInWrithe(victim),
@@ -213,7 +213,7 @@ if (GAME == FIVEM) {
             const isMelee = ammoHash == 0 ? true : false;  // this will work
             const damageBone = GetPedLastDamageBone(victim);
 
-            let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, 0, damageBone, false, isMelee, healthLost)
+            let [suspectData, victimData, situationData] = CreateSituationReport(suspect, victim, position, weaponHash, 0, damageBone, false, isMelee, {h: healthLost})
 
             emit('twiliCore:damage:event', suspectData, victimData, situationData);
 
