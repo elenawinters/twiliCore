@@ -1,4 +1,7 @@
 const Delay = (ms) => new Promise(res => setTimeout(res, ms));
+Array.prototype.sample = function() {
+    return this[Math.floor(Math.random()*this.length)];
+}  // https://stackoverflow.com/a/33906108
 
 // This is a really interesting way to kinda do classes.
 // It's probably not efficient though. Consider this UNSAFE.
