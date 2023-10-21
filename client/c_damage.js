@@ -155,12 +155,12 @@ switch(GAME) {
         // })
     
         on('gameEventTriggered', function (eventName, data) {
-            // if (eventName != 'CEventNetworkEntityDamage') { return; }
+            if (eventName != 'CEventNetworkEntityDamage') { return; }
     
             const victim = data[0];
             const suspect = data[1];
     
-            if (IsPedAPlayer(suspect) && IsPedAPlayer(victim) && suspect != victim) { return; }  // required for hybrid
+            // if (IsPedAPlayer(suspect) && IsPedAPlayer(victim) && suspect != victim) { return; }  // required for hybrid
     
             let offset = 0;
     
