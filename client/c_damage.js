@@ -100,17 +100,33 @@ function CalculateDamagePosition(suspect, victim, victimDied) {
 
 function CreateSituationReport(suspect, victim, position, weaponHash, damageTypeSecondary, damageBone, victimDied, isMelee, healthLost) {
     const suspectPlayer = NetworkGetPlayerIndexFromPed(suspect)
+    let suspectName = GetPlayerName(suspectPlayer)
+    if (!IsPedAPlayer(suspect)) {
+        const archName = GetEntityArchetypeName(suspect)
+        if (archName != suspect) {
+            suspectName = archName
+        }
+    }
+
     let suspectData = {
         entity: suspect,
         networkIndex: GetPlayerServerId(suspectPlayer),
-        networkName: GetPlayerName(suspectPlayer)
+        networkName: suspectName
     }
 
     const victimPlayer = NetworkGetPlayerIndexFromPed(victim)
+    let victimName = GetPlayerName(victimPlayer)
+    if (!IsPedAPlayer(victim)) {
+        const archName = GetEntityArchetypeName(victim)
+        if (archName != victim) {
+            victimName = archName
+        }
+    }
+
     let victimData = {
         entity: victim,
         networkIndex: GetPlayerServerId(victimPlayer),
-        networkName: GetPlayerName(victimPlayer)
+        networkName: victimName
     }
     let situation = {
         position: position,
