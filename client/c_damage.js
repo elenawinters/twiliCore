@@ -102,8 +102,8 @@ function CreateSituationReport(suspect, victim, position, weaponHash, damageType
     const suspectPlayer = NetworkGetPlayerIndexFromPed(suspect)
     let suspectName = GetPlayerName(suspectPlayer)
     if (!IsPedAPlayer(suspect)) {
-        const archName = GetEntityArchetypeName(suspect)
-        if (archName != suspect) {
+        const archName = GAME == FIVEM ? GetEntityArchetypeName(suspect) : null;
+        if (archName != undefined && archName != suspect) {
             suspectName = archName
         }
     }
@@ -117,8 +117,8 @@ function CreateSituationReport(suspect, victim, position, weaponHash, damageType
     const victimPlayer = NetworkGetPlayerIndexFromPed(victim)
     let victimName = GetPlayerName(victimPlayer)
     if (!IsPedAPlayer(victim)) {
-        const archName = GetEntityArchetypeName(victim)
-        if (archName != victim) {
+        const archName = GAME == FIVEM ? GetEntityArchetypeName(victim) : null;
+        if (archName != undefined && archName != victim) {
             victimName = archName
         }
     }
